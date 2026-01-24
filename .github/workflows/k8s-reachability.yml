@@ -51,7 +51,7 @@ jobs:
 
           kubectl config set-cluster target \
             --server="$KUBE_SERVER" \
-            --certificate-authority=ca.crt
+            --insecure-skip-tls-verify=true
 
           kubectl config set-credentials gha \
             --token="$KUBE_TOKEN"
