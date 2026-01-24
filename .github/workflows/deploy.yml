@@ -1,0 +1,61 @@
+name: Build and Deploy to MicroK8s
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-webapp
+  cancel-in-progress: true
+
+env:
+  NAMESPACE: webapp
+  APP_NAME: webapp
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        run: |
+          IMAGE="${REGISTRY}/${IMAGE_NAME}:${{ github.sha }}"
+          IMAGE_LATEST="${REGISTRY}/${IMAGE_NAME}:latest"
+          docker build -t "$IMAGE" -t "$IMAGE_LATEST" .
+          docker push "$IMAGE"
+          docker push "$IMAGE_LATEST"
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+
+      - name: Setup kubeconfig
+        run: |
+          echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > kubeconfig
+          echo "KUBECONFIG=$PWD/kubeconfig" >> $GITHUB_ENV
+
+      - name: Ensure namespace exists
+        run: |
+          kubectl get ns "$NAMESPACE" >/dev/null 2>&1 || kubectl create ns "$NAMESPACE"
+
+      - name: Deploy manifests
+        run: |
+          kubectl apply -n "$NAMESPACE" -f k8s/
+
+      - name: Update image + rollout
+        run: |
+          kubectl -n "$NAMESPACE" set image deployment/"$APP_NAME" "$APP_NAME"="$IMAGE"
+          kubectl -n "$NAMESPACE" rollout status deployment/"$APP_NAME" --timeout=180s
