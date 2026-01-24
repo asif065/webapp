@@ -6,6 +6,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Show runner public IP
         run: |
@@ -30,25 +31,39 @@ jobs:
         run: |
           URL="https://$KUBE_IP:$KUBE_PORT/livez"
           echo "Curling $URL"
-          curl -k -sS -D - "$URL" -o /dev/null | head -n 30
+          curl -k -sS -D - "$URL" -o /dev/null | head -n 40
 
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
         with:
           version: v1.29.0
 
-      - name: kubectl test (auth + RBAC)
+      - name: Configure kubeconfig and test kubectl (auth + RBAC)
         env:
-          KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
-          KUBE_CA: ${{ secrets.KUBE_CA }}
-          KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+          KUBE_SERVER: ${{ secrets.KUBE_SERVER }} # e.g. https://103.217.109.62:16443
+          KUBE_CA: ${{ secrets.KUBE_CA }}         # base64 CA data
+          KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}   # serviceaccount token
         run: |
+          set -euo pipefail
+
+          # Write CA cert to a file (works across kubectl versions)
+          echo "$KUBE_CA" | base64 -d > ca.crt
+
           kubectl config set-cluster target \
             --server="$KUBE_SERVER" \
-            --certificate-authority-data="$KUBE_CA"
-          kubectl config set-credentials gha --token="$KUBE_TOKEN"
-          kubectl config set-context test --cluster=target --user=gha
+            --certificate-authority=ca.crt
+
+          kubectl config set-credentials gha \
+            --token="$KUBE_TOKEN"
+
+          kubectl config set-context test \
+            --cluster=target \
+            --user=gha
+
           kubectl config use-context test
 
+          echo "kubectl version:"
           kubectl version --short
+
+          echo "Listing namespaces:"
           kubectl get ns
