@@ -1,0 +1,54 @@
+name: K8s API reachability test (IP)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show runner public IP
+        run: |
+          echo "Runner public IP:"
+          curl -s https://api.ipify.org
+          echo
+
+      - name: TCP connectivity (port reachable?)
+        env:
+          KUBE_IP: ${{ secrets.KUBE_IP }}
+          KUBE_PORT: ${{ secrets.KUBE_PORT }}
+        run: |
+          echo "Testing TCP to $KUBE_IP:$KUBE_PORT"
+          timeout 5 bash -lc "cat < /dev/null > /dev/tcp/$KUBE_IP/$KUBE_PORT" \
+            && echo "✅ TCP connect OK" \
+            || (echo "❌ TCP connect FAILED (firewall/router blocking)" && exit 1)
+
+      - name: Curl /livez (reachability over HTTPS)
+        env:
+          KUBE_IP: ${{ secrets.KUBE_IP }}
+          KUBE_PORT: ${{ secrets.KUBE_PORT }}
+        run: |
+          URL="https://$KUBE_IP:$KUBE_PORT/livez"
+          echo "Curling $URL"
+          curl -k -sS -D - "$URL" -o /dev/null | head -n 30
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.29.0
+
+      - name: kubectl test (auth + RBAC)
+        env:
+          KUBE_SERVER: ${{ secrets.KUBE_SERVER }}
+          KUBE_CA: ${{ secrets.KUBE_CA }}
+          KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
+        run: |
+          kubectl config set-cluster target \
+            --server="$KUBE_SERVER" \
+            --certificate-authority-data="$KUBE_CA"
+          kubectl config set-credentials gha --token="$KUBE_TOKEN"
+          kubectl config set-context test --cluster=target --user=gha
+          kubectl config use-context test
+
+          kubectl version --short
+          kubectl get ns
