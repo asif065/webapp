@@ -63,7 +63,7 @@ jobs:
           kubectl config use-context test
 
           echo "kubectl version:"
-          kubectl version --short
+          kubectl version
 
           echo "Listing namespaces:"
           kubectl get ns
