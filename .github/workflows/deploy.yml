@@ -37,7 +37,7 @@ jobs:
         run: |
           IMAGE="${REGISTRY}/${IMAGE_NAME}:${{ github.sha }}"
           IMAGE_LATEST="${REGISTRY}/${IMAGE_NAME}:latest"
-          docker build -t "$IMAGE" -t "$IMAGE_LATEST" .
+          docker build -t "$IMAGE" -t "$IMAGE_LATEST" -f webapp/Dockerfile webapp
           docker push "$IMAGE"
           docker push "$IMAGE_LATEST"
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
