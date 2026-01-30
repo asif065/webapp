@@ -1,3 +1,7 @@
+# --------------------------------------------
+# MySQL PersistentVolumeClaim
+# --------------------------------------------
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -9,6 +13,14 @@ spec:
     requests:
       storage: 5Gi
 ---
+
+# --------------------------------------------
+# MySQL Deployment (single instance)
+# - Adds resources (no more BestEffort)
+# - Adds readiness/liveness probes
+# - Uses secrets for ALL passwords (including root)
+# --------------------------------------------
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -46,7 +58,34 @@ spec:
                   name: webapp-secret
                   key: DB_PASSWORD
             - name: MYSQL_ROOT_PASSWORD
-              value: rootpass
+              valueFrom:
+                secretKeyRef:
+                  name: webapp-secret
+                  key: DB_ROOT_PASSWORD
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "127.0.0.1"]
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 6
+
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "127.0.0.1"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+
           volumeMounts:
             - name: mysql-data
               mountPath: /var/lib/mysql
@@ -55,6 +94,9 @@ spec:
           persistentVolumeClaim:
             claimName: mysql-pvc
 ---
+# --------------------------------------------
+# MySQL Service (ClusterIP by default)
+# --------------------------------------------
 apiVersion: v1
 kind: Service
 metadata:
