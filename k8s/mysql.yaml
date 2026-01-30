@@ -27,6 +27,8 @@ metadata:
   name: mysql
   namespace: webapp
 spec:
+  strategy:
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
