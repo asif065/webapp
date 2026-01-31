@@ -105,9 +105,16 @@ metadata:
   namespace: webapp
   annotations:
     #nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - asifakter.com
+        - www.asifakter.com
+      secretName: webapp-tls
   rules:
     - host: asifakter.com
       http:
