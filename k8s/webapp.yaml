@@ -91,10 +91,30 @@ metadata:
   name: webapp
   namespace: webapp
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: webapp
   ports:
     - port: 80
       targetPort: 80
-      nodePort: 30080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webapp-ingress
+  namespace: webapp
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: webapp.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: webapp
+                port:
+                  number: 80
