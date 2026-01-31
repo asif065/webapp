@@ -66,7 +66,9 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn () => Inertia::render('auth/login'));
+        //Fortify::registerView(fn () => Inertia::render('auth/register'));
+        Fortify::registerView(fn () => redirect()->route('login'));
+
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 
