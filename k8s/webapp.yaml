@@ -89,6 +89,46 @@ spec:
               value: database
             - name: CACHE_STORE
               value: file
+            - name: MAIL_MAILER
+              valueFrom:
+                secretKeyRef:
+                  name: webapp-secret
+                  key: MAIL_MAILER
+            - name: MAIL_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: webapp-secret
+                  key: MAIL_HOST
+            - name: MAIL_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: webapp-secret
+                  key: MAIL_PORT
+            - name: MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: webapp-secret
+                  key: MAIL_USERNAME
+            - name: MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: webapp-secret
+                  key: MAIL_PASSWORD
+            - name: MAIL_ENCRYPTION
+              valueFrom:
+                secretKeyRef:
+                  name: webapp-secret
+                  key: MAIL_ENCRYPTION
+            - name: MAIL_FROM_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: webapp-secret
+                  key: MAIL_FROM_ADDRESS
+            - name: MAIL_FROM_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: webapp-secret
+                  key: MAIL_FROM_NAME
 ---
 apiVersion: v1
 kind: Service
