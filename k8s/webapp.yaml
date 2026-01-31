@@ -104,11 +104,22 @@ metadata:
   name: webapp-ingress
   namespace: webapp
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    #nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
 spec:
   ingressClassName: nginx
   rules:
-    - host: webapp.local
+    - host: asifakter.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: webapp
+                port:
+                  number: 80
+    - host: www.asifakter.com
       http:
         paths:
           - path: /
